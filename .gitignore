@@ -1,0 +1,5 @@
+68kemu.cflags
+68kemu.config
+68kemu.cxxflags
+68kemu.files
+68kemu.includes
