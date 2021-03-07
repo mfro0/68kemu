@@ -1,7 +1,5 @@
 #include "m68ksubr.h"
 
-#include "debug.h"
-
 extern int m68ki_initial_cycles;
 
 /* Execute a subroutine until it returns */
@@ -12,7 +10,7 @@ int m68k_execute_subroutine(long sp, long subroutine)
      */
     m68ki_cpu_core saved_core = m68ki_cpu;
 
-    dbg("saved active CPU core\r\n");
+    // dbg("saved active CPU core\r\n");
 
     /*
      * set address to our subroutine
@@ -66,7 +64,6 @@ int m68k_execute_subroutine(long sp, long subroutine)
             {
                 long reg_d0 = m68k_get_reg(NULL, M68K_REG_D0);
 
-                dbg("restore saved CPU core\r\n");
                 m68ki_cpu = saved_core;
                 return reg_d0;
             }

@@ -23,6 +23,11 @@
 #include "musashi/m68k.h"
 #include "musashi/m68kcpu.h"
 
+#include "userdefs.h"
+#include <gem.h>
+
+#include "debug.h"
+
 static void* old_ssp_real;
 
 static void* BothSuperFromUser(void* new_ssp_emu)
@@ -44,7 +49,7 @@ static void* BothSuperFromUser(void* new_ssp_emu)
     old_ssp_emu = (void*)m68k_get_reg(NULL, M68K_REG_SP);
     m68k_set_reg(M68K_REG_SP, (int)new_ssp_emu);
     m68k_set_reg(M68K_REG_D0, (int)old_ssp_emu);
-    
+
     return old_ssp_emu;
 }
 
@@ -75,7 +80,7 @@ void m68ki_hook_trap1()
     {
         void* param = *(void**)(sp + 1);
         //printf("Super(0x%08lx)\n", (long)param);
-        
+
         if (param != (void*)1)
         {
             long current_super = Super(SUP_INQUIRE);
@@ -106,7 +111,7 @@ void m68ki_hook_trap1()
         : "g"(sp)
         : "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
         );
-        
+
         m68k_set_reg(M68K_REG_D0, (int)reg_d0);
     }
 }
@@ -116,6 +121,65 @@ void m68ki_hook_trap2()
     void* sp = (void*)m68k_get_reg(NULL, M68K_REG_SP);
     unsigned long ad0 = (unsigned long)m68k_get_reg(NULL, M68K_REG_D0);
     unsigned long ad1 = (unsigned long)m68k_get_reg(NULL, M68K_REG_D1);
+
+    /*
+     * need to intercept objc_draw(), objc_change() and menu_bar() calls
+     * since these might bring USERDEFS with them
+     */
+
+    if ((short) ad0 == 200)     /* is this an AES call? */
+    {
+        /*
+         * yes, retrieve parameter arrays
+         */
+        AESPB *pb = (AESPB *) ad1;
+
+#define FN_MENU_BAR     30
+#define FN_OBJC_ADD     40
+#define FN_OBJC_DRAW    42
+#define FN_OBJC_CHANGE  47
+
+        if (pb->control[0] == FN_OBJC_ADD)
+            dbg("\r\nobjc_add() call detected\r\n\r\n");
+
+        /*
+         * objc_draw(), objc_change() or menu_bar() call?
+         */
+        if (pb->control[0] == FN_OBJC_DRAW || pb->control[0] == FN_OBJC_CHANGE
+                || pb->control[0] == FN_MENU_BAR)
+        {
+            OBJECT *tree;
+            short obj;
+            short depth;
+
+            tree = (OBJECT *) pb->addrin[0];        /* object tree */
+
+            switch (pb->control[0])
+            {
+                case FN_OBJC_DRAW:
+                    dbg("detected objc_draw() call\r\n");
+                    obj = pb->intin[0];             /* start object index */
+                    depth = pb->intin[1];           /* drawing depth */
+                    break;
+
+                case FN_OBJC_CHANGE:
+                    dbg("detected objc_change() call\r\n");
+                    obj = pb->intin[0];
+                    depth = 0;
+                    break;
+
+                case FN_MENU_BAR:
+                    dbg("detected menu_bar() call\r\n");
+                    if (pb->intin[0] != 1)          /* draw the bar */
+                        return;
+                    obj = 0;
+                    depth = 20;
+                    break;
+            }
+
+            fix_userdefs(tree, obj, depth);
+        }
+    }
 
     //printf("GEM\n");
     __asm__ volatile
@@ -150,7 +214,7 @@ void m68ki_hook_trap13()
     : "g"(sp)
     : "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
     );
-    
+
     m68k_set_reg(M68K_REG_D0, (int)reg_d0);
 }
 
@@ -194,7 +258,7 @@ unsigned long SupexecImpl(SUPEXEC_CALLBACK_TYPE* f)
 
     if (!from_super)
         SuperToUser(old_ssp);
-        
+
     return ret;
 }
 */
@@ -225,7 +289,7 @@ void m68ki_hook_trap14()
         m68k_set_reg(M68K_REG_PC, (int)SupexecImpl);
         return;
     }
-    
+
     __asm__ volatile
     (
         "move.l	sp,a3\n\t"
@@ -236,9 +300,9 @@ void m68ki_hook_trap14()
     : "g"(sp)
     : "d1", "d2", "a0", "a1", "a2", "a3", "memory" /* clobbered regs */
     );
-    
+
     //nextCallback = NULL;
-    
+
     m68k_set_reg(M68K_REG_D0, (int)reg_d0);
 }
 
@@ -252,8 +316,8 @@ void m68ki_hook_linea()
     register long reg_a2 __asm__("a2");
     unsigned short opcode = pc[-1];
     unsigned short num = opcode & 0x000f;
-    
-    //printf("Line A %u 0x%04x\n", num, opcode);
+
+    dbg("Line A %u 0x%04x\n", num, opcode);
 
     __asm__ volatile
     (
@@ -301,7 +365,7 @@ void m68ki_hook_linea()
     : "g"(sp), "g"(num)
     : "d1", "d2", "a3", "memory"    /* clobbered regs */
     );
-    
+
     m68k_set_reg(M68K_REG_D0, (int)reg_d0);
     m68k_set_reg(M68K_REG_A0, (int)reg_a0);
     m68k_set_reg(M68K_REG_A1, (int)reg_a1);
@@ -316,21 +380,26 @@ int int_ack_callback(int int_level)
     return int_ack_callback_vector;
 }
 
+void instr_hook(void)
+{
+    // dbg("0x%08X: %s\r\n", REG_PC, m68ki_disassemble_quick(REG_PC, M68K_CPU_TYPE_68020));
+}
+
 unsigned char systack[64*1024];
 
 void buildCommandTail(char tail[128], char* argv[], int argc)
 {
     int i;
-    
+
     tail[1] = '\0';
     for (i = 0; i < argc; ++i)
     {
         if (i > 0)
             strcat(tail + 1, " ");
-            
+
         strcat(tail + 1, argv[i]);
     }
-    
+
     tail[0] = (char)strlen(tail + 1);
 }
 
@@ -366,18 +435,18 @@ int main(int argc, char* argv[])
     bp = (BASEPAGE*)Pexec(PE_LOAD, argv[1], tail, NULL);
     if ((long)bp < 0)
     {
-        fprintf(stderr, "error: cannot load %s.\n", argv[1]);
+        fprintf(stderr, "error: cannot load %s (%ld).\n", argv[1], bp);
         return 1;
     }
 
     m68k_set_cpu_type(M68K_CPU_TYPE_68020);
     m68k_pulse_reset(); // Patched
     //m68k_set_int_ack_callback(int_ack_callback);
-    
+
     pStack = (unsigned long*)bp->p_hitpa;
     *--pStack = (unsigned long)bp;
     *--pStack = (unsigned long)0;
-    
+
     m68k_set_reg(M68K_REG_SP, (int)(systack + 1));
     m68k_set_reg(M68K_REG_SR, 0x0300);
     m68k_set_reg(M68K_REG_SP, (int)pStack);
@@ -387,6 +456,6 @@ int main(int argc, char* argv[])
     {
         m68k_execute(10000);
     }
-    
+
     return 0;
 }

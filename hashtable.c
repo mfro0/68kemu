@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "debug.h"
-
 struct kv
 {
     void *key;
@@ -105,7 +103,6 @@ int ht_get(const struct hashtable *map, const void *key, const size_t key_length
     if (out_buf == NULL)
         return 0;
 
-    dbg("memcpy() from %p (%p) to %p %d bytes\r\n", pair->value, * (char **) pair->value, out_buf, n_out_buf);
     memcpy(out_buf, pair->value, n_out_buf);
 
     return 1;
@@ -336,7 +333,6 @@ static unsigned long hash(const void *value, const size_t value_length)
         c = ((char *) value)[i];
         hash = ((hash << 5) + hash) + c;
     }
-    dbg("hash of value beginning with 0x%lx length %d = 08%lx\r\n", *(long *) value, value_length, hash);
 
     return hash;
 }

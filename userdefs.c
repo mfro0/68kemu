@@ -9,7 +9,6 @@
 #include "m68ksubr.h"
 #include "debug.h"
 
-
 typedef short (*ufunc)(PARMBLK *pb);
 
 struct udh_hashobj
@@ -33,10 +32,8 @@ short do_ud(PARMBLK *pb)
 {
     our_stack[STACKSIZE - 1] = (long) pb;
 
-    dbg("pb = %p\r\n", pb);
-
     // unsigned long old_stack = Super(&our_stack[STACKSIZE - 2]);
-
+    dbg("pb = %p\r\n", pb);
 
     // dbg("old_stack = %p, pb = %p\r\n", old_stack, pb);
 
@@ -51,9 +48,8 @@ short do_ud(PARMBLK *pb)
     if (ht_get(userdef_ht, &h, sizeof(h), &f, sizeof(f)))
     {
         dbg("userdef found in hashtable (tree=0x%x, obj=%d, f=%p)\r\n",
-            pb->pb_tree, pb->pb_obj, &f);
+            pb->pb_tree, pb->pb_obj, f);
         dbg("calling callback at %p\r\n", f);
-
     }
     else
     {
@@ -94,7 +90,8 @@ int insert_ud(ufunc f, OBJECT *tree, short obj)
      */
     if (userdef_ht != NULL && !ht_exists(userdef_ht, &h, sizeof(h)))
     {
-        dbg("insert tree 0x%x obj %d into hashtable, function %p\r\n", tree, obj, f);
+        dbg("insert tree 0x%x obj %d into hashtable, function %p\r\n",
+            tree, obj, f);
         return ht_put(userdef_ht, &h, sizeof(h), &f, sizeof(f));
     }
     else
@@ -131,7 +128,8 @@ int insert_uf(USERBLK *ub, ufunc f, ufunc ori_f)
 
     if (functions_ht != NULL && !ht_exists(functions_ht, &ub, sizeof(USERBLK *)))
     {
-        dbg("insert function %p, original function %p for userblk %p\r\n", f, ori_f, ub);
+        dbg("insert function %p, original function %p for userblk %p\r\n",
+            f, ori_f, ub);
         res = ht_put(functions_ht, &ub, sizeof(USERBLK *), &v, sizeof(v));
     }
     /*
@@ -143,7 +141,7 @@ int insert_uf(USERBLK *ub, ufunc f, ufunc ori_f)
     r = ht_get(functions_ht, &ub, sizeof(USERBLK *), &v, sizeof(v));
     if (r != 0)
     {
-        dbg("v.f = %p, v.ori_f=%p\r\n", v.f, v.ori_f);
+        dbg("v.f = %p, v.ori_f = %p\r\n", v.f, v.ori_f);
     }
     else
         dbg("ht_get failed\r\n");
@@ -161,12 +159,12 @@ static void fixit(OBJECT *tree, short obj)
     {
         USERBLK *ub = (USERBLK *) tree[obj].ob_spec.userblk;
 
-        dbg("userdef found, tree %p obj %d func address=%p\r\n", tree, obj, ub->ub_code);
-
+        dbg("userdef found, tree %p obj %d func address=%p\r\n",
+            tree, obj, ub->ub_code);
         /*
          * caveat: possible reuse of user blk
          * If the userdef function reuses a USERBLK object we already changed, we would insert
-         * our hook function as original function, effectvely producing an endless loop by having this
+         * our hook function as original function, effectvely producing an infinite loop by having this
          * function call itself on callback. To avoid this, we search through the hash table to see if we
          * had this already and take the original address stored there.
          */
@@ -224,7 +222,7 @@ static void tree_walk(OBJECT *tree, short start, void (*callrout)(OBJECT *tree, 
  */
 void fix_userdefs(OBJECT *tree, short obj, short max_depth)
 {
-    dbg("fixing userdefs of tree %p obj %d with depth %d\r\n", tree, obj, max_depth);
+    //dbg("fixing userdefs of tree %p obj %d with depth %d\r\n", tree, obj, max_depth);
     tree_walk(tree, obj, fixit);
 }
 

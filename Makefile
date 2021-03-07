@@ -15,13 +15,18 @@
 
 CC = m68k-atari-mint-gcc
 CPUFLAGS = -mcpu=5475
-CFLAGS = -Wall -O3 -fomit-frame-pointer
-LDFLAGS = -s
+CFLAGS = -g -DDEBUG -Wall -O3 -fomit-frame-pointer
+LDFLAGS = -g -Wl,-Map -Wl,mapfile
 LIBS = musashi/libmusashi.a
 
 TARGET = 68kemu.prg
 
-OBJS = 68kemu.o asm.o
+OBJS = \
+	68kemu.o \
+	asm.o \
+	hashtable.o \
+	userdefs.o \
+	m68ksubr.o
 
 .PHONY = all
 all: $(TARGET)
@@ -37,7 +42,7 @@ musashi: musashi.stamp
 musashi.stamp:
 	cd musashi && $(MAKE) libmusashi.a
 	touch $@
-	
+
 $(TARGET): musashi.stamp $(OBJS) $(LIBS)
 	$(CC) $(CPUFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
 
