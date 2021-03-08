@@ -1,5 +1,13 @@
+68kemu.creator
+68kemu.creator.user
 68kemu.cflags
 68kemu.config
 68kemu.cxxflags
 68kemu.files
 68kemu.includes
+*.prg
+*.o
+*.a
+*.stamp
+m68kmake
+mapfile

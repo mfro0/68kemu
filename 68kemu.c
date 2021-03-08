@@ -385,7 +385,7 @@ void instr_hook(void)
     // dbg("0x%08X: %s\r\n", REG_PC, m68ki_disassemble_quick(REG_PC, M68K_CPU_TYPE_68020));
 }
 
-unsigned char systack[64*1024];
+unsigned char systack[64 * 1024];
 
 void buildCommandTail(char tail[128], char* argv[], int argc)
 {
@@ -432,10 +432,10 @@ int main(int argc, char* argv[])
 
     char tail[128];
     buildCommandTail(tail, argv + 2, argc - 2);
-    bp = (BASEPAGE*)Pexec(PE_LOAD, argv[1], tail, NULL);
+    bp = (BASEPAGE*) Pexec(PE_LOAD, argv[1], tail, NULL);
     if ((long)bp < 0)
     {
-        fprintf(stderr, "error: cannot load %s (%ld).\n", argv[1], bp);
+        fprintf(stderr, "error: cannot load %s (%p).\n", argv[1], bp);
         return 1;
     }
 
@@ -444,13 +444,12 @@ int main(int argc, char* argv[])
     //m68k_set_int_ack_callback(int_ack_callback);
 
     pStack = (unsigned long*)bp->p_hitpa;
-    *--pStack = (unsigned long)bp;
-    *--pStack = (unsigned long)0;
+    *--pStack = (unsigned long) bp;
+    *--pStack = (unsigned long) 0;
 
-    m68k_set_reg(M68K_REG_SP, (int)(systack + 1));
     m68k_set_reg(M68K_REG_SR, 0x0300);
-    m68k_set_reg(M68K_REG_SP, (int)pStack);
-    m68k_set_reg(M68K_REG_PC, (int)bp->p_tbase);
+    m68k_set_reg(M68K_REG_SP, (int) pStack);
+    m68k_set_reg(M68K_REG_PC, (int) bp->p_tbase);
 
     for (;;)
     {

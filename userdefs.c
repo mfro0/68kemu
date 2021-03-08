@@ -25,13 +25,11 @@ struct udf_hashobj
 static struct hashtable *userdef_ht = NULL;
 static struct hashtable *functions_ht = NULL;
 
-#define STACKSIZE   16 * 1024
-static long our_stack[STACKSIZE];    /* 16k of stack for the callback */
+#define STACKSIZE   4 * 1024 / sizeof(long)
+static long our_stack[STACKSIZE];    /* 4k of stack for the callback */
 
 short do_ud(PARMBLK *pb)
 {
-    our_stack[STACKSIZE - 1] = (long) pb;
-
     // unsigned long old_stack = Super(&our_stack[STACKSIZE - 2]);
     dbg("pb = %p\r\n", pb);
 
@@ -60,13 +58,16 @@ short do_ud(PARMBLK *pb)
      * exec f with pb as parameter in the emulator
      */
 
-    long stack[1024];       /* 4k of stack for the emulated subroutine */
+    long stack[STACKSIZE];       /* 4k of stack for the emulated subroutine */
 
-    stack[1023] = (long) pb;
-    stack[1022] = RETURN_STACK_MARKER;
-    m68k_execute_subroutine((long) &stack[1022], (long) f);
+    dbg("pb at %p\r\n", pb);
+    dbg("x=%d, y=%d, w=%d, h=%d\r\n", pb->pb_x, pb->pb_y, pb->pb_w, pb->pb_h);
+    dbg("obj=%d, parm=%lx, tree=%p, currstate=%d, prevstate=%d\r\n",
+        pb->pb_obj, pb->pb_parm, pb->pb_tree, pb->pb_currstate, pb->pb_prevstate);
+    stack[STACKSIZE - 1] = (long) pb;
+    stack[STACKSIZE - 2] = RETURN_STACK_MARKER;
+    m68k_execute_subroutine((long) &stack[STACKSIZE - 2], (long) f);
 
-    // Super(old_stack);
     return 0;
 }
 
