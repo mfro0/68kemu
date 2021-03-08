@@ -30,10 +30,7 @@ static long our_stack[STACKSIZE];    /* 4k of stack for the callback */
 
 short do_ud(PARMBLK *pb)
 {
-    // unsigned long old_stack = Super(&our_stack[STACKSIZE - 2]);
     dbg("pb = %p\r\n", pb);
-
-    // dbg("old_stack = %p, pb = %p\r\n", old_stack, pb);
 
     /*
      * lookup original userdef function by tree and object extracted from
