@@ -280,13 +280,13 @@ void m68ki_hook_trap14()
         //printf("Supexec(0x%08lx)\n", (unsigned long)pCallback);
         //ret = RunEmulatedFunction(SupexecImpl, pCallback);
         //m68k_set_reg(M68K_REG_D0, (int)ret);
-        pc = (void*)m68k_get_reg(NULL, M68K_REG_PC);
+        pc = (void *) m68k_get_reg(NULL, M68K_REG_PC);
         //printf("*pc = 0x%04x\n", *(((unsigned short*)pc)-1));
         //return;
-        sp = (unsigned long*)m68k_get_reg(NULL, M68K_REG_SP);
+        sp = (unsigned long *) m68k_get_reg(NULL, M68K_REG_SP);
         *--sp = (unsigned long)pc;
-        m68k_set_reg(M68K_REG_SP, (int)sp);
-        m68k_set_reg(M68K_REG_PC, (int)SupexecImpl);
+        m68k_set_reg(M68K_REG_SP, (int) sp);
+        m68k_set_reg(M68K_REG_PC, (int) SupexecImpl);
         return;
     }
 
