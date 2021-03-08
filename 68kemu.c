@@ -30,43 +30,43 @@
 
 static void* old_ssp_real;
 
-static void* BothSuperFromUser(void* new_ssp_emu)
+static void* BothSuperFromUser(void *new_ssp_emu)
 {
     unsigned short sr;
     void* old_ssp_emu;
 
     // Switch the real CPU to supervisor mode
-    old_ssp_real = (void *)Super(SUP_SET);
+    // old_ssp_real = (void *) Super(SUP_SET);
 
     // Switch the emulated CPU to supervisor mode
     if (new_ssp_emu == NULL)
-        new_ssp_emu = (void*)m68k_get_reg(NULL, M68K_REG_SP);
+        new_ssp_emu = (void*) m68k_get_reg(NULL, M68K_REG_SP);
 
-    sr = (unsigned short)m68k_get_reg(NULL, M68K_REG_SR);
+    sr = (unsigned short) m68k_get_reg(NULL, M68K_REG_SR);
     sr |= 0x2000;
     m68k_set_reg(M68K_REG_SR, sr);
 
-    old_ssp_emu = (void*)m68k_get_reg(NULL, M68K_REG_SP);
-    m68k_set_reg(M68K_REG_SP, (int)new_ssp_emu);
-    m68k_set_reg(M68K_REG_D0, (int)old_ssp_emu);
+    old_ssp_emu = (void*) m68k_get_reg(NULL, M68K_REG_SP);
+    m68k_set_reg(M68K_REG_SP, (int) new_ssp_emu);
+    m68k_set_reg(M68K_REG_D0, (int) old_ssp_emu);
 
     return old_ssp_emu;
 }
 
-static void BothSuperToUser(void* old_ssp_emu)
+static void BothSuperToUser(void *old_ssp_emu)
 {
     unsigned short sr;
 
     // Switch the real CPU to user mode
-    SuperToUser(old_ssp_real);
+    //SuperToUser(old_ssp_real);
 
-    m68k_set_reg(M68K_REG_SP, (int)old_ssp_emu);
+    m68k_set_reg(M68K_REG_SP, (int) old_ssp_emu);
 
-    sr = (unsigned short)m68k_get_reg(NULL, M68K_REG_SR);
+    sr = (unsigned short) m68k_get_reg(NULL, M68K_REG_SR);
     sr &= ~0x2000;
     m68k_set_reg(M68K_REG_SR, sr);
 
-    m68k_set_reg(M68K_REG_D0, (int)0);
+    m68k_set_reg(M68K_REG_D0, (int) 0);
 }
 
 void m68ki_hook_trap1()
@@ -81,7 +81,7 @@ void m68ki_hook_trap1()
         void* param = *(void**)(sp + 1);
         //printf("Super(0x%08lx)\n", (long)param);
 
-        if (param != (void*)1)
+        if (param != (void*) 1)
         {
             long current_super = Super(SUP_INQUIRE);
             if (current_super)
@@ -170,8 +170,8 @@ void m68ki_hook_trap2()
 
                 case FN_MENU_BAR:
                     dbg("detected menu_bar() call\r\n");
-                    if (pb->intin[0] != 1)          /* draw the bar */
-                        return;
+                    //if (pb->intin[0] != 1)          /* draw the bar */
+                    //    return;
                     obj = 0;
                     depth = 20;
                     break;
@@ -433,7 +433,7 @@ int main(int argc, char* argv[])
     char tail[128];
     buildCommandTail(tail, argv + 2, argc - 2);
     bp = (BASEPAGE*) Pexec(PE_LOAD, argv[1], tail, NULL);
-    if ((long)bp < 0)
+    if ((long) bp < 0)
     {
         fprintf(stderr, "error: cannot load %s (%p).\n", argv[1], bp);
         return 1;
@@ -457,4 +457,12 @@ int main(int argc, char* argv[])
     }
 
     return 0;
+}
+
+void fc_handler(long fc)
+{
+    if (fc == 6)
+    {
+        // dbg("0x%08x: %s\r\n", REG_PPC, m68ki_disassemble_quick(REG_PPC, M68K_CPU_TYPE_68020));
+    }
 }
