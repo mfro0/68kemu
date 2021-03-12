@@ -196,13 +196,32 @@ void m68ki_hook_trap2()
     );
 }
 
+static void setexc_hook(void)
+{
+
+}
+
 void m68ki_hook_trap13()
 {
     unsigned short* sp = (unsigned short *)m68k_get_reg(NULL, M68K_REG_SP);
-    //unsigned short num = *sp;
+    unsigned short num = *sp;
     register long reg_d0 __asm__("d0");
+    unsigned short low, hi;
 
-    //printf("BIOS(0x%02x)\n", num);
+    printf("BIOS(0x%02x)\n", num);
+    if (num == 5)                       /* this is a Setexc() call */
+    {
+        if ((low = sp[2]) == 0xffff && (hi = sp[3]) == 0xff)
+        {
+            /* just inquire - pass */
+            dbg("Setexc() - just inquire: pass\r\n");
+        }
+        else
+        {
+            long new_vector = hi << 16 | low;
+
+        }
+    }
 
     __asm__ volatile
     (
