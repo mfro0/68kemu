@@ -14,8 +14,9 @@
 # If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 
 CC = m68k-atari-mint-gcc
-CPUFLAGS = -mcpu=5475
-CFLAGS = -g -DDEBUG -Wall -O3 -fomit-frame-pointer
+# CPUFLAGS come from QtCreator
+# CPUFLAGS = -mcpu=5475
+CFLAGS = $(DEBUG) -g -Wall -O3 -fomit-frame-pointer
 LDFLAGS = -g -Wl,-Map -Wl,mapfile
 LIBS = musashi/libmusashi.a
 
@@ -26,7 +27,10 @@ OBJS = \
 	asm.o \
 	hashtable.o \
 	userdefs.o \
-	m68ksubr.o
+	m68ksubr.o \
+	natfeats.o \
+	nf_asm.o
+	
 
 .PHONY = all
 all: $(TARGET)
