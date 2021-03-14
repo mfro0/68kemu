@@ -20,7 +20,7 @@
 
 #include "debug.h"
 
-#define LOWMEM  0x700
+#define LOWMEM  0x800
 
 INLINE unsigned int m68k_read_memory_8(unsigned int address)
 {
@@ -28,6 +28,7 @@ INLINE unsigned int m68k_read_memory_8(unsigned int address)
         return * (unsigned char *) address;
     else
         dbg("attempt to read low memory\r\n");
+
     return 0;
 }
 
@@ -37,6 +38,7 @@ INLINE unsigned int m68k_read_memory_16(unsigned int address)
         return * (unsigned short *) address;
     else
         dbg("attempt to read low memory\r\n");
+
     return 0;
 }
 
@@ -46,33 +48,37 @@ INLINE unsigned int m68k_read_memory_32(unsigned int address)
         return * (unsigned long *) address;
     else
         dbg("attempt to read low memory\r\n");
+
     return 0;
 }
 
 INLINE unsigned int m68k_read_disassembler_8(unsigned int address)
 {
     if ((unsigned) address > LOWMEM)
-        return *(unsigned char *) address;
+        return * (unsigned char *) address;
     else
         dbg("attempt to read low memory to disassembler\r\n");
+
     return * (unsigned char *) address;
 }
 
 INLINE unsigned int m68k_read_disassembler_16 (unsigned int address)
 {
     if ((unsigned) address > LOWMEM)
-        return *(unsigned short *) address;
+        return * (unsigned short *) address;
     else
         dbg("attempt to read low memory to disassembler\r\n");
+
     return * (unsigned short *) address;
 }
 
 INLINE unsigned int m68k_read_disassembler_32 (unsigned int address)
 {
     if ((unsigned) address > LOWMEM)
-        return *(unsigned long*)address;
+        return * (unsigned long *) address;
     else
         dbg("attempt to read low memory to disassembler\r\n");
+
     return * (unsigned long *) address;
 }
 
@@ -103,6 +109,7 @@ INLINE void m68k_write_memory_32(unsigned int address, unsigned int value)
     if ((unsigned) address > LOWMEM)
     {
         * (unsigned long *) address = (long) value;
+
         return;
     }
     else
