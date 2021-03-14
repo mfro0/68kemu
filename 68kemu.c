@@ -30,35 +30,41 @@
 
 static void* old_ssp_real;
 
+/*
+ * bring both the real *and* emulated processor from user mode to supervisor mode
+ */
 static void* BothSuperFromUser(void *new_ssp_emu)
 {
     unsigned short sr;
     void* old_ssp_emu;
 
     // Switch the real CPU to supervisor mode
-    // old_ssp_real = (void *) Super(SUP_SET);
+    old_ssp_real = (void *) Super(SUP_SET);
 
     // Switch the emulated CPU to supervisor mode
     if (new_ssp_emu == NULL)
-        new_ssp_emu = (void*) m68k_get_reg(NULL, M68K_REG_SP);
+        new_ssp_emu = (void *) m68k_get_reg(NULL, M68K_REG_SP);
 
     sr = (unsigned short) m68k_get_reg(NULL, M68K_REG_SR);
     sr |= 0x2000;
     m68k_set_reg(M68K_REG_SR, sr);
 
-    old_ssp_emu = (void*) m68k_get_reg(NULL, M68K_REG_SP);
+    old_ssp_emu = (void *) m68k_get_reg(NULL, M68K_REG_SP);
     m68k_set_reg(M68K_REG_SP, (int) new_ssp_emu);
     m68k_set_reg(M68K_REG_D0, (int) old_ssp_emu);
 
     return old_ssp_emu;
 }
 
+/*
+ * bring both the real *and* emulated processor from supervisor mode to user mode
+ */
 static void BothSuperToUser(void *old_ssp_emu)
 {
     unsigned short sr;
 
     // Switch the real CPU to user mode
-    //SuperToUser(old_ssp_real);
+    SuperToUser(old_ssp_real);
 
     m68k_set_reg(M68K_REG_SP, (int) old_ssp_emu);
 
@@ -71,17 +77,17 @@ static void BothSuperToUser(void *old_ssp_emu)
 
 void m68ki_hook_trap1()
 {
-    unsigned short* sp = (unsigned short *)m68k_get_reg(NULL, M68K_REG_SP);
+    unsigned short *sp = (unsigned short *) m68k_get_reg(NULL, M68K_REG_SP);
     unsigned short num = *sp;
 
-    //printf("GEMDOS(0x%02x)\n", num);
+    dbg("GEMDOS(0x%02x)\n", num);
 
     if (num == 0x20)
     {
-        void* param = *(void**)(sp + 1);
-        //printf("Super(0x%08lx)\n", (long)param);
+        void *param = * (void **)(sp + 1);
+        dbg("Super(0x%08lx)\n", (long) param);
 
-        if (param != (void*) 1)
+        if (param != (void *) 1)
         {
             long current_super = Super(SUP_INQUIRE);
             if (current_super)
@@ -104,23 +110,24 @@ void m68ki_hook_trap1()
         __asm__ volatile
         (
             "move.l	sp,a3\n\t"
-            "move.l	%1,sp\n\t"
+            "move.l	%[sp],sp\n\t"
             "trap	#1\n\t"
             "move.l	a3,sp"
-        : "=r"(reg_d0)			/* outputs */
-        : "g"(sp)
-        : "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
+        : "=r"(reg_d0)                                      /* outputs */
+        : [sp] "g"(sp)
+        : "d1", "d2", "a0", "a1", "a2", "a3", "memory"      /* clobbered regs */
         );
 
-        m68k_set_reg(M68K_REG_D0, (int)reg_d0);
+        m68k_set_reg(M68K_REG_D0, (int) reg_d0);
+        dbg("return value=%d\r\n", reg_d0);
     }
 }
 
 void m68ki_hook_trap2()
 {
-    void* sp = (void*)m68k_get_reg(NULL, M68K_REG_SP);
-    unsigned long ad0 = (unsigned long)m68k_get_reg(NULL, M68K_REG_D0);
-    unsigned long ad1 = (unsigned long)m68k_get_reg(NULL, M68K_REG_D1);
+    void *sp = (void *) m68k_get_reg(NULL, M68K_REG_SP);
+    unsigned long ad0 = (unsigned long) m68k_get_reg(NULL, M68K_REG_D0);
+    unsigned long ad1 = (unsigned long) m68k_get_reg(NULL, M68K_REG_D1);
 
     /*
      * need to intercept objc_draw(), objc_change() and menu_bar() calls
@@ -184,16 +191,19 @@ void m68ki_hook_trap2()
     //printf("GEM\n");
     __asm__ volatile
     (
-        "move.l	sp,a3\n\t"
-        "move.l	%1,d0\n\t"
-        "move.l	%2,d1\n\t"
-        "move.l	%0,sp\n\t"
-        "trap	#2\n\t"
-        "move.l	a3,sp"
-    : /* outputs */
-    : "g"(sp), "g"(ad0), "g"(ad1)
-    : "d0", "d1", "d2", "a0", "a1", "a2", "a3", "memory" /* clobbered regs */
+        "move.l	sp,a3                   \n\t"
+        "move.l	%[ad0],d0               \n\t"
+        "move.l	%[ad1],d1               \n\t"
+        "move.l	%[sp],sp                \n\t"
+        "trap	#2                      \n\t"
+        "move.l	a3,sp                   \n\t"
+    : "=g" (ad0)                                                      /* outputs */
+    : [ad0] "g"(ad0), [ad1] "g"(ad1), [sp] "g"(sp)
+    : "d0", "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
     );
+
+    m68k_set_reg(M68K_REG_D0, (int) ad0);
+    dbg("return value=%d\r\n", ad0);
 }
 
 static void setexc_hook(void)
@@ -211,7 +221,7 @@ void m68ki_hook_trap13()
     printf("BIOS(0x%02x)\n", num);
     if (num == 5)                       /* this is a Setexc() call */
     {
-        if ((low = sp[2]) == 0xffff && (hi = sp[3]) == 0xff)
+        if ((low = sp[2]) == 0xffff && (hi = sp[3]) == 0xffff)
         {
             /* just inquire - pass */
             dbg("Setexc() - just inquire: pass\r\n");
@@ -219,7 +229,8 @@ void m68ki_hook_trap13()
         else
         {
             long new_vector = hi << 16 | low;
-
+            dbg("Setexc(): attempt to reroute vector %d to %p\r\n",
+                sp[0], new_vector);
         }
     }
 
