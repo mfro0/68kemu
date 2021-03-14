@@ -119,7 +119,7 @@ void m68ki_hook_trap1()
         );
 
         m68k_set_reg(M68K_REG_D0, (int) reg_d0);
-        dbg("return value=%d\r\n", reg_d0);
+        dbg("return value=0x%lx\r\n", (int) reg_d0);
     }
 }
 
@@ -197,13 +197,13 @@ void m68ki_hook_trap2()
         "move.l	%[sp],sp                \n\t"
         "trap	#2                      \n\t"
         "move.l	a3,sp                   \n\t"
-    : "=g" (ad0)                                                      /* outputs */
+    : "=r" (ad0)                                                      /* outputs */
     : [ad0] "g"(ad0), [ad1] "g"(ad1), [sp] "g"(sp)
     : "d0", "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
     );
 
     m68k_set_reg(M68K_REG_D0, (int) ad0);
-    dbg("return value=%d\r\n", ad0);
+    dbg("return value=0x%lx\r\n", (int) ad0);
 }
 
 static void setexc_hook(void)
@@ -218,7 +218,7 @@ void m68ki_hook_trap13()
     register long reg_d0 __asm__("d0");
     unsigned short low, hi;
 
-    printf("BIOS(0x%02x)\n", num);
+    dbg("BIOS(0x%02x)\n", num);
     if (num == 5)                       /* this is a Setexc() call */
     {
         if ((low = sp[2]) == 0xffff && (hi = sp[3]) == 0xffff)
@@ -245,7 +245,7 @@ void m68ki_hook_trap13()
     : "d1", "d2", "a0", "a1", "a2", "a3", "memory"    /* clobbered regs */
     );
 
-    m68k_set_reg(M68K_REG_D0, (int)reg_d0);
+    m68k_set_reg(M68K_REG_D0, (int) reg_d0);
 }
 
 typedef void VOIDFUNC(void);
@@ -298,7 +298,7 @@ void m68ki_hook_trap14()
     unsigned short num = *(unsigned short*)sp;
     register long reg_d0 __asm__("d0");
 
-    //printf("XBIOS(0x%02x)\n", num);
+    dbg("XBIOS(0x%02x)\n", num);
 
     if (num == 0x26)
     {
@@ -333,7 +333,8 @@ void m68ki_hook_trap14()
 
     //nextCallback = NULL;
 
-    m68k_set_reg(M68K_REG_D0, (int)reg_d0);
+    m68k_set_reg(M68K_REG_D0, (int) reg_d0);
+    dbg("return value=0x%x\r\n", reg_d0);
 }
 
 void m68ki_hook_linea()
