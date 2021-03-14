@@ -19,8 +19,9 @@
 # See readme.txt in 3rd-party/musashi-3.3.1/musashi331.zip for details.
 
 CC = m68k-atari-mint-gcc
-CPUFLAGS = -mcpu=5475
-CFLAGS = -Wall -O3 -fomit-frame-pointer
+# CPUFLAGS come from QtCreator
+# CPUFLAGS = -mcpu=5475
+CFLAGS = -Wall $(DEBUG) -O3 -g -fomit-frame-pointer
 AR = m68k-atari-mint-ar
 
 NATIVE_CC = gcc
