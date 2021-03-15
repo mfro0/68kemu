@@ -91,8 +91,8 @@ int m68k_execute_subroutine(long sp, long subroutine)
         return m68ki_initial_cycles - GET_CYCLES();
     }
 
-    dbg("stoped???\r\n");
-    /* We get here if the CPU is stopped or halted */
+    dbg("stopped???\r\n");
+    /* We arrive here if the CPU is stopped or halted */
     SET_CYCLES(0);
     CPU_INT_CYCLES = 0;
 
