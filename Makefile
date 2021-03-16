@@ -28,9 +28,10 @@ OBJS = \
 	hashtable.o \
 	userdefs.o \
 	m68ksubr.o \
+	sv_access.o \
 	natfeats.o \
 	nf_asm.o
-	
+
 
 .PHONY = all
 all: $(TARGET)

@@ -49,7 +49,8 @@ int m68k_execute_subroutine(long sp, long subroutine)
             /* Call external hook to peek at CPU */
             m68ki_instr_hook(); /* auto-disable (see m68kcpu.h) */
 
-            // dbg("0x%08x: %s\r\n", REG_PC, m68ki_disassemble_quick(REG_PC, M68K_CPU_TYPE_68020));
+            dbg("0x%08x: %s\r\n", REG_PC, m68ki_disassemble_quick(REG_PC, M68K_CPU_TYPE_68020));
+            //dbg("0x%08x: %s\r\n", REG_PC, m68ki_disassemble_quick(REG_PC, M68K_CPU_TYPE_68020));
 
             /* Record previous program counter */
             REG_PPC = REG_PC;

@@ -18,12 +18,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <mint/osbind.h>
 #include <mint/basepage.h>
 #include "musashi/m68k.h"
 #include "musashi/m68kcpu.h"
 
 #include "userdefs.h"
+#include "m68ksubr.h"
 #include <gem.h>
 
 #include "debug.h"
@@ -39,9 +41,10 @@ static void* BothSuperFromUser(void *new_ssp_emu)
     void* old_ssp_emu;
 
     // Switch the real CPU to supervisor mode
-    old_ssp_real = (void *) Super(SUP_SET);
+    //old_ssp_real = (void *) Super(SUP_SET);
 
     // Switch the emulated CPU to supervisor mode
+    // if no new SSP is given, reuse the current SP as SSP
     if (new_ssp_emu == NULL)
         new_ssp_emu = (void *) m68k_get_reg(NULL, M68K_REG_SP);
 
@@ -64,14 +67,13 @@ static void BothSuperToUser(void *old_ssp_emu)
     unsigned short sr;
 
     // Switch the real CPU to user mode
-    SuperToUser(old_ssp_real);
+    //SuperToUser(old_ssp_real);
 
     m68k_set_reg(M68K_REG_SP, (int) old_ssp_emu);
 
     sr = (unsigned short) m68k_get_reg(NULL, M68K_REG_SR);
     sr &= ~0x2000;
     m68k_set_reg(M68K_REG_SR, sr);
-
     m68k_set_reg(M68K_REG_D0, (int) 0);
 }
 
@@ -89,17 +91,17 @@ void m68ki_hook_trap1()
 
         if (param != (void *) 1)
         {
-            long current_super = Super(SUP_INQUIRE);
+            // long current_super = Super(SUP_INQUIRE);
+            bool current_super = m68k_get_reg(NULL, M68K_REG_SR) & (1 << 13);
             if (current_super)
             {
                 BothSuperToUser(param);
-                return;
             }
             else /* current user */
             {
                 BothSuperFromUser(param);
-                return;
             }
+            return;     /* emulator registers are set by functions above */
         }
     }
 
@@ -111,7 +113,7 @@ void m68ki_hook_trap1()
         (
             "move.l	sp,a3\n\t"
             "move.l	%[sp],sp\n\t"
-            "trap	#1\n\t"
+            "trap   #1\n\t"
             "move.l	a3,sp"
         : "=r"(reg_d0)                                      /* outputs */
         : [sp] "g"(sp)
@@ -294,29 +296,25 @@ unsigned long SupexecImpl(SUPEXEC_CALLBACK_TYPE* f)
 */
 void m68ki_hook_trap14()
 {
-    unsigned char* sp = (unsigned char *)m68k_get_reg(NULL, M68K_REG_SP);
+    unsigned char* sp = (unsigned char *) m68k_get_reg(NULL, M68K_REG_SP);
     unsigned short num = *(unsigned short*)sp;
     register long reg_d0 __asm__("d0");
+#define STACKSIZE   128
+#define RETURN_STACK_MARKER     0xaffeaffe
+    long stack[STACKSIZE];
 
     dbg("XBIOS(0x%02x)\n", num);
 
     if (num == 0x26)
     {
-        //SUPEXEC_CALLBACK_TYPE* pCallback = *(SUPEXEC_CALLBACK_TYPE**)(sp + 2);
-        //unsigned long ret;
-        unsigned long* sp;
-        void* pc;
+        SUPEXEC_CALLBACK_TYPE* pCallback = * (SUPEXEC_CALLBACK_TYPE **)(sp + 2);
+        unsigned long ret;
 
-        //printf("Supexec(0x%08lx)\n", (unsigned long)pCallback);
-        //ret = RunEmulatedFunction(SupexecImpl, pCallback);
-        //m68k_set_reg(M68K_REG_D0, (int)ret);
-        pc = (void *) m68k_get_reg(NULL, M68K_REG_PC);
-        //printf("*pc = 0x%04x\n", *(((unsigned short*)pc)-1));
-        //return;
-        sp = (unsigned long *) m68k_get_reg(NULL, M68K_REG_SP);
-        *--sp = (unsigned long)pc;
-        m68k_set_reg(M68K_REG_SP, (int) sp);
-        m68k_set_reg(M68K_REG_PC, (int) SupexecImpl);
+        dbg("Supexec(0x%08lx)\n", (unsigned long) pCallback);
+        stack[STACKSIZE - 1] = RETURN_STACK_MARKER;
+        ret = m68k_execute_subroutine(&stack[STACKSIZE - 1], pCallback);
+        m68k_set_reg(M68K_REG_D0, (int) ret);
+        dbg("return value = 0x%x\r\n", ret);
         return;
     }
 

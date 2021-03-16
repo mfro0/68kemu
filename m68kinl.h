@@ -27,9 +27,7 @@ INLINE unsigned int m68k_read_memory_8(unsigned int address)
     if ((unsigned) address > LOWMEM)
         return * (unsigned char *) address;
     else
-        dbg("attempt to read low memory\r\n");
-
-    return 0;
+        return read_super(address, 8);
 }
 
 INLINE unsigned int m68k_read_memory_16(unsigned int address)
@@ -37,9 +35,7 @@ INLINE unsigned int m68k_read_memory_16(unsigned int address)
     if ((unsigned) address > LOWMEM)
         return * (unsigned short *) address;
     else
-        dbg("attempt to read low memory\r\n");
-
-    return 0;
+        return read_super(address, 16);
 }
 
 INLINE unsigned int m68k_read_memory_32(unsigned int address)
@@ -47,39 +43,28 @@ INLINE unsigned int m68k_read_memory_32(unsigned int address)
     if ((unsigned) address > LOWMEM)
         return * (unsigned long *) address;
     else
-        dbg("attempt to read low memory\r\n");
-
-    return 0;
+        return read_super(address, 32);
 }
 
 INLINE unsigned int m68k_read_disassembler_8(unsigned int address)
 {
     if ((unsigned) address > LOWMEM)
         return * (unsigned char *) address;
-    else
-        dbg("attempt to read low memory to disassembler\r\n");
-
-    return * (unsigned char *) address;
+    return read_super(address, 8);
 }
 
 INLINE unsigned int m68k_read_disassembler_16 (unsigned int address)
 {
     if ((unsigned) address > LOWMEM)
         return * (unsigned short *) address;
-    else
-        dbg("attempt to read low memory to disassembler\r\n");
-
-    return * (unsigned short *) address;
+    return read_super(address, 16);
 }
 
 INLINE unsigned int m68k_read_disassembler_32 (unsigned int address)
 {
     if ((unsigned) address > LOWMEM)
         return * (unsigned long *) address;
-    else
-        dbg("attempt to read low memory to disassembler\r\n");
-
-    return * (unsigned long *) address;
+    return read_super(address, 32);
 }
 
 INLINE void m68k_write_memory_8(unsigned int address, unsigned int value)
@@ -90,7 +75,7 @@ INLINE void m68k_write_memory_8(unsigned int address, unsigned int value)
         return;
     }
     else
-        dbg("attempt to write to low memory\r\n");
+        dbg("attempt to write to low memory (%p = 0x%x)\r\n", address, value);
 }
 
 INLINE void m68k_write_memory_16(unsigned int address, unsigned int value)
@@ -101,7 +86,7 @@ INLINE void m68k_write_memory_16(unsigned int address, unsigned int value)
         return;
     }
     else
-        dbg("attempt to write to low memory\r\n");
+        dbg("attempt to write to low memory (%p = 0x%x)\r\n", address, value);
 }
 
 INLINE void m68k_write_memory_32(unsigned int address, unsigned int value)
@@ -113,7 +98,9 @@ INLINE void m68k_write_memory_32(unsigned int address, unsigned int value)
         return;
     }
     else
-        dbg("attempt to write to low memory\r\n");
+    {
+        write_super(address, value);
+    }
 }
 
 #endif /* __INC_M68KINL_H__ */
