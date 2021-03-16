@@ -1,0 +1,10 @@
+#it appears QED is determining its running under MiNT when it isn't?
+#After a Pdomain() call, Pgeteuid() and Pgetgid() are called?
+Fixed. QED runs fine as m68k binary.
+
+Do not forget to change MMU code in BaS_gcc to protect system vectors and sysvars!
+
+Interface (resource editor, apparently Pure C compiled) checks for an arithmetic coprocessor
+at 0xfffa42 (control register of the Atari coprocessor card). For this, it replaces the
+adress error handler using Supexec(). We need to catch this access and pretend we don't
+have a coprocessor.
