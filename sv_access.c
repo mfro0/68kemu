@@ -17,7 +17,7 @@ unsigned int read_super(unsigned address, int length)
     unsigned val;
 
     addr = (unsigned *) address;
-    val = Supexec((long (*)(void))read_sup);
+    val = Supexec((long (*)(void)) read_sup);
 
     dbg("*%p = 0x%x\r\n", address, val);
     return val;
@@ -28,6 +28,7 @@ static unsigned val;
 unsigned write_sup(void)
 {
     *addr = val;
+    return val;         /* just return *something* */
 }
 
 static unsigned long vector_table[255] = { 0 };
@@ -84,7 +85,7 @@ static void exception_handler(struct exception_stackframe ex, void (*pc)(void))
     dbg("pc=%p, access=%p sr=%x\r\n",
         ex.pc, ex.access, ex.sr);
     ht_get(ht, (long[1]) { 8 }, sizeof(long), &value,  sizeof(value));
-    m68k_execute_subroutine(stack, value);
+    m68k_execute_subroutine((long) stack, (long) value);
 }
 #endif
 #endif
@@ -100,7 +101,7 @@ void write_super(unsigned address, unsigned value)
     if (ht == NULL)
         ht = ht_new(HT_SIZE);
 
-    addr = address;
+    addr = (unsigned *) address;
     val = (unsigned int) &exception_handler;
     dbg("*%p = 0x%x\r\n", addr, val);
     Supexec(write_sup);
