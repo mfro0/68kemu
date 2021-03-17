@@ -4,6 +4,17 @@
 #include "hashtable.h"
 #include "m68ksubr.h"
 
+bool is_super(void)
+{
+    return ((unsigned short) m68k_get_reg(NULL, M68K_REG_SR) & 0x2000);
+}
+
+void berr(void)
+{
+    m68ki_stack_frame_buserr(pc, sr, adr, write, instruction, fc);
+    m68k_set_reg(M68K_REG_PC, emu_vector_table[3]);
+}
+
 static unsigned *addr;
 
 unsigned read_sup(void)
@@ -27,11 +38,15 @@ static unsigned val;
 
 unsigned write_sup(void)
 {
-    *addr = val;
-    return val;         /* just return *something* */
+    switch ((int) addr)
+    {
+        default:
+            *addr = val;
+            break;
+    }
 }
 
-static unsigned long vector_table[255] = { 0 };
+static unsigned long emu_vector_table[255] = { 0 };
 
 # define HT_SIZE    20
 static struct hashtable *ht = NULL;
@@ -100,6 +115,30 @@ void write_super(unsigned address, unsigned value)
 
     if (ht == NULL)
         ht = ht_new(HT_SIZE);
+
+    unsigned pc, sr, adr, write, instruction, fc;
+
+    switch((long) addr)
+    {
+        case 0xfa42:
+        case 0xfffa42:
+        case 0xfffffa42:
+            pc = m68k_get_reg(NULL, M68K_REG_PC);
+            sr = m68k_get_reg(NULL, M68K_REG_SR);
+            adr = (unsigned) addr;
+            write = 1;
+            instruction = 1;        /* no idea, yet */
+            fc = 0;                 /* sloppy */
+            m68ki_stack_frame_buserr(pc, sr, adr, write, instruction, fc);
+            m68k_set_reg(M68K_REG_PC, emu_vector_table[3]);
+
+            return;
+
+        case 8:
+            emu_vector_table[address / 4 + 1] = value;
+            return;
+            break;
+    }
 
     addr = (unsigned *) address;
     val = (unsigned int) &exception_handler;

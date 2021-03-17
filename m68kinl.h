@@ -18,6 +18,7 @@
 #ifndef __INC_M68KINL_H__
 #define __INC_M68KINL_H__
 
+#include "sv_access.h"
 #include "debug.h"
 
 #define LOWMEM  0x800
@@ -50,21 +51,30 @@ INLINE unsigned int m68k_read_disassembler_8(unsigned int address)
 {
     if ((unsigned) address > LOWMEM)
         return * (unsigned char *) address;
-    return read_super(address, 8);
+    else if (is_super())
+        return read_super(address, 8);
+    else
+        berr();
 }
 
 INLINE unsigned int m68k_read_disassembler_16 (unsigned int address)
 {
     if ((unsigned) address > LOWMEM)
-        return * (unsigned short *) address;
-    return read_super(address, 16);
+        return * (unsigned char *) address;
+    else if (is_super())
+        return read_super(address, 8);
+    else
+        berr();
 }
 
 INLINE unsigned int m68k_read_disassembler_32 (unsigned int address)
 {
     if ((unsigned) address > LOWMEM)
-        return * (unsigned long *) address;
-    return read_super(address, 32);
+        return * (unsigned char *) address;
+    else if (is_super())
+        return read_super(address, 8);
+    else
+        berr();
 }
 
 INLINE void m68k_write_memory_8(unsigned int address, unsigned int value)

@@ -15,6 +15,8 @@
   If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
+#undef DEBUG
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
