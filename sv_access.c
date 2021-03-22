@@ -11,6 +11,10 @@ bool is_super(void)
 
 void berr(void)
 {
+    unsigned pc, sr, adr, write, instruction, fc;
+
+    pc = m68k_get_reg(NULL, M68K_REG_PC);
+
     m68ki_stack_frame_buserr(pc, sr, adr, write, instruction, fc);
     m68k_set_reg(M68K_REG_PC, emu_vector_table[3]);
 }
@@ -45,6 +49,12 @@ unsigned write_sup(void)
             break;
     }
 }
+
+struct vector
+{
+    void (*handler)(void);
+    bool native;
+};
 
 static unsigned long emu_vector_table[255] = { 0 };
 
@@ -120,7 +130,6 @@ void write_super(unsigned address, unsigned value)
 
     switch((long) addr)
     {
-        case 0xfa42:
         case 0xfffa42:
         case 0xfffffa42:
             pc = m68k_get_reg(NULL, M68K_REG_PC);
